@@ -11,7 +11,9 @@ REGISTRIES = {
     "data/minecraft/pig_variant": "minecraft:pig_variant",
     "data/minecraft/wolf_sound_variant": "minecraft:wolf_sound_variant",
     "data/minecraft/wolf_variant": "minecraft:wolf_variant",
-    "data/minecraft/worldgen/biome": "minecraft:worldgen/biome"
+    "data/minecraft/worldgen/biome": "minecraft:worldgen/biome",
+    "data/minecraft/dimension_type": "minecraft:dimension_type",
+    "data/minecraft/damage_type": "minecraft:damage_type",
 }
 
 

@@ -208,6 +208,53 @@ pub struct RegistryPaintingVariant {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct RegistryDimensionTypeMonsterSpawnLightLevel {
+    #[serde(rename = "type")]
+    pub light_level_type: String,
+    pub max_inclusive: i32,
+    pub min_inclusive: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RegistryDimensionTypeMonsterSpawnLightLevelType {
+    Int(i32),
+    RegistryDimensionTypeMonsterSpawnLightLevel(RegistryDimensionTypeMonsterSpawnLightLevel),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegistryDimensionType {
+    pub ambient_light: f32,
+    pub bed_works: bool,
+    pub coordinate_scale: f32,
+    pub effects: String,
+    pub has_ceiling: bool,
+    pub has_raids: bool,
+    pub has_skylight: bool,
+    pub height: i32,
+    pub infiniburn: String,
+    pub logical_height: i32,
+    pub min_y: i32,
+    pub monster_spawn_block_light_limit: i32,
+    pub monster_spawn_light_level: RegistryDimensionTypeMonsterSpawnLightLevelType,
+    pub natural: bool,
+    pub piglin_safe: bool,
+    pub respawn_anchor_works: bool,
+    pub ultrawarm: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegistryDamageType {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub death_message_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub effects: Option<String>,
+    pub exhaustion: f32,
+    pub message_id: String,
+    pub scaling: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Registry {
     #[serde(rename = "minecraft:worldgen/biome")]
     pub biome: HashMap<String, RegistryBiome>,
@@ -227,6 +274,10 @@ pub struct Registry {
     pub wolf_sound_variant: HashMap<String, RegistryWolfSoundVariant>,
     #[serde(rename = "minecraft:painting_variant")]
     pub painting_variant: HashMap<String, RegistryPaintingVariant>,
+    #[serde(rename = "minecraft:dimension_type")]
+    pub dimension_type: HashMap<String, RegistryDimensionType>,
+    #[serde(rename = "minecraft:damage_type")]
+    pub damage_type: HashMap<String, RegistryDamageType>,
 }
 
 #[macro_export]
@@ -246,7 +297,19 @@ macro_rules! generate_registry_builder {
     };
 }
 
-generate_registry_builder!(build_biome, biome);
+pub fn build_biome(registry: &Registry) -> RegistryData {
+    let entries: Vec<RegistryDataEntry> = registry
+        .biome
+        .iter()
+        .map(|(name, nbt)| RegistryDataEntry::from_nbt(name, nbt).unwrap())
+        .collect();
+    RegistryData {
+        registry_id: String::from("minecraft:worldgen/biome"),
+        entries: PrefixedArray(entries),
+    }
+}
+
+// generate_registry_builder!(build_biome, biome);
 generate_registry_builder!(build_cat_variant, cat_variant);
 generate_registry_builder!(build_chicken_variant, chicken_variant);
 generate_registry_builder!(build_cow_variant, cow_variant);
@@ -255,6 +318,8 @@ generate_registry_builder!(build_pig_variant, pig_variant);
 generate_registry_builder!(build_wolf_variant, wolf_variant);
 generate_registry_builder!(build_wolf_sound_variant, wolf_sound_variant);
 generate_registry_builder!(build_painting_variant, painting_variant);
+generate_registry_builder!(build_dimension_type, dimension_type);
+generate_registry_builder!(build_damage_type, damage_type);
 
 pub fn build_registries_data() -> Result<Vec<RegistryData>, pumpkin_nbt::Error> {
     let raw_registry_json = include_str!("../new_registry.json");
@@ -270,5 +335,7 @@ pub fn build_registries_data() -> Result<Vec<RegistryData>, pumpkin_nbt::Error> 
         build_wolf_variant(&registry),
         build_wolf_sound_variant(&registry),
         build_painting_variant(&registry),
+        build_dimension_type(&registry),
+        build_damage_type(&registry),
     ])
 }

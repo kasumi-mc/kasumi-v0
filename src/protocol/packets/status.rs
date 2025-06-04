@@ -19,6 +19,6 @@ define_packet!(ServerboundPingRequestPacket, 0x01, Status, {
 define_packet!(ClientboundStatusResponsePacket, 0x00, Status, {
     response: ServerListPing,
 });
-define_packet!(ClientboundPingResponsePacket, 0x00, Status, {
+define_packet!(ClientboundPingResponsePacket, 0x01, Status, {
     value: i64,
 });

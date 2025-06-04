@@ -3,6 +3,7 @@ use crate::{connection::Connection, protocol::packets::Packet};
 pub mod configuration;
 pub mod handshake;
 pub mod login;
+pub mod play;
 pub mod status;
 
 /// Adapter for a each individual packet handler that converts a generic packet

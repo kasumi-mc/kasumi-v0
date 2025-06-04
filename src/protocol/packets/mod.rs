@@ -10,6 +10,7 @@ use crate::{
 pub mod configuration;
 pub mod handshake;
 pub mod login;
+pub mod play;
 pub mod status;
 
 /// Errors that can occur while decoding the packet.

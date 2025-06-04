@@ -14,10 +14,10 @@ pub struct Identifier {
 }
 
 impl Identifier {
-    pub fn minecraft(value: String) -> Self {
+    pub fn minecraft(value: &str) -> Self {
         Self {
             namespace: String::from("minecraft"),
-            value,
+            value: value.to_string(),
         }
     }
 }

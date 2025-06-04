@@ -89,7 +89,7 @@ define_packet!(ServerboundKnownPacksPacket, 0x07, Configuration, {
     packs: PrefixedArray<KnownPack>,
 });
 
-define_packet!(ClientboundKnownPacksPacket, 0x03, Configuration, {
+define_packet!(ClientboundKnownPacksPacket, 0x0E, Configuration, {
     packs: PrefixedArray<KnownPack>,
 });
 define_packet!(ClientboundFinishConfigurationPacket, 0x03, Configuration, {

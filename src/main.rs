@@ -13,6 +13,7 @@ pub mod network;
 pub mod protocol;
 pub mod registry;
 pub mod varint;
+pub mod world;
 
 fn main() {
     let listener = TcpListener::bind("0.0.0.0:25565").unwrap();
@@ -22,12 +23,14 @@ fn main() {
     packets::status::setup_registry(&mut registry);
     packets::login::setup_registry(&mut registry);
     packets::configuration::setup_registry(&mut registry);
+    packets::play::setup_registry(&mut registry);
 
     let mut handler_registry = HandlersRegistry::default();
     handlers::handshake::setup_registry(&mut handler_registry);
     handlers::status::setup_registry(&mut handler_registry);
     handlers::login::setup_registry(&mut handler_registry);
-    // handlers::configuration::setup_registry(&mut handler_registry);
+    handlers::configuration::setup_registry(&mut handler_registry);
+    handlers::play::setup_registry(&mut handler_registry);
 
     let packet_registry = Arc::new(registry);
     let handler_registry = Arc::new(handler_registry);

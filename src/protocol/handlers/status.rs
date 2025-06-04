@@ -86,6 +86,7 @@ pub fn handle_status_request(connection: &mut Connection, _: &ServerboundStatusR
 }
 
 pub fn handle_ping_request(connection: &mut Connection, packet: &ServerboundPingRequestPacket) {
+    println!("received ping request");
     connection.write_packet(Box::new(ClientboundPingResponsePacket {
         value: packet.value,
     }));

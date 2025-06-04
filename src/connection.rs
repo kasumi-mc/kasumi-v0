@@ -35,7 +35,7 @@ pub enum ConnectionError {
 pub struct Connection {
     stream: TcpStream,
     reader: PacketReader,
-    state: ProtocolState,
+    pub state: ProtocolState,
 
     // registries
     registry: Arc<PacketsRegistry>,
@@ -81,6 +81,7 @@ impl Connection {
     /// propagation.
     pub fn serve(mut self) -> Result<(), ConnectionError> {
         let mut buffer = [0u8; BUFFER_CAPACITY];
+        let mut observed_unknown_packets = vec![];
 
         loop {
             let size = match self.stream.read(&mut buffer) {
@@ -94,10 +95,14 @@ impl Connection {
                 let packet_decode_fn = match self.registry.get(self.state, id) {
                     Some(data) => data,
                     None => {
-                        eprintln!(
-                            "Received an unknown packet ID={id} in state {:?}",
-                            self.state
-                        ); // TODO: use proper logging
+                        if !observed_unknown_packets.contains(&id) {
+                            eprintln!(
+                                "Received an unknown packet ID={id} in state {:?}",
+                                self.state
+                            ); // TODO: use proper logging
+                            observed_unknown_packets.push(id);
+                        }
+
                         continue;
                     }
                 };

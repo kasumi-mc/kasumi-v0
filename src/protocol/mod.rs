@@ -1,10 +1,13 @@
-use std::str::Utf8Error;
+use std::{io::Read, str::Utf8Error};
 
 use bytes::{Bytes, BytesMut};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::varint::{VarInt, VarIntError};
+use crate::{
+    network::BufferReader,
+    varint::{VarInt, VarIntError},
+};
 
 pub mod identifier;
 pub mod macros;
@@ -62,6 +65,52 @@ pub enum ReadError {
 /// Represents a prefixed array. The simplest container out there.
 #[derive(Debug, Clone)]
 pub struct PrefixedArray<T: Readable + Writeable>(pub Vec<T>);
+
+#[derive(Debug, Clone)]
+pub struct BitSet {
+    inner: Vec<u64>,
+}
+
+impl BitSet {
+    pub fn empty() -> Self {
+        Self { inner: vec![] }
+    }
+
+    pub fn get(&self, bit: usize) -> bool {
+        let (word, bit) = (bit / 64, bit % 64);
+        if let Some(&val) = self.inner.get(word) {
+            (val & (1 << bit)) != 0
+        } else {
+            false
+        }
+    }
+}
+
+impl Readable for BitSet {
+    fn read(buffer: &[u8]) -> Result<(Self, usize), ReadError> {
+        let mut reader = BufferReader::new(buffer);
+        let length = reader.read(VarInt::read)?;
+        let mut inner = Vec::with_capacity(length.0 as usize);
+
+        for _ in 0..length.0 {
+            let word = reader.read(i64::read)?;
+            inner.push(word as u64);
+        }
+
+        Ok((Self { inner }, reader.consumed()))
+    }
+}
+
+impl Writeable for BitSet {
+    fn write(&self) -> Result<Bytes, WriteError> {
+        let mut buffer = BytesMut::new();
+        buffer.extend_from_slice(&VarInt(self.inner.len() as i32).write()?);
+        for word in &self.inner {
+            buffer.extend_from_slice(&((*word as i64).write()?));
+        }
+        Ok(buffer.freeze())
+    }
+}
 
 /// Implementation of a generic types for a Minecraft protocol as per
 /// specification.
@@ -175,6 +224,41 @@ impl Readable for Vec<u8> {
     }
 }
 
+impl Readable for i32 {
+    fn read(buffer: &[u8]) -> Result<(Self, usize), ReadError> {
+        let i32_buffer = buffer.get(..4).ok_or(ReadError::Incomplete)?;
+        let array: [u8; 4] = i32_buffer.try_into().unwrap(); // safe: `i32_buffer` is always 4 bytes
+        Ok((i32::from_be_bytes(array), 4))
+    }
+}
+
+impl<T: Readable> Readable for Option<T> {
+    fn read(buffer: &[u8]) -> Result<(Self, usize), ReadError> {
+        let (value, read_length) = match T::read(buffer) {
+            Ok((value, read_length)) => (Some(value), read_length),
+            Err(ReadError::Incomplete) => (None, 0),
+            Err(e) => return Err(e),
+        };
+        Ok((value, read_length))
+    }
+}
+
+impl Readable for f64 {
+    fn read(buffer: &[u8]) -> Result<(Self, usize), ReadError> {
+        let f64_buffer = buffer.get(..8).ok_or(ReadError::Incomplete)?;
+        let array: [u8; 8] = f64_buffer.try_into().unwrap(); // safe: `f64_buffer` is always 8 bytes
+        Ok((f64::from_be_bytes(array), 8))
+    }
+}
+
+impl Readable for f32 {
+    fn read(buffer: &[u8]) -> Result<(Self, usize), ReadError> {
+        let f32_buffer = buffer.get(..4).ok_or(ReadError::Incomplete)?;
+        let array: [u8; 4] = f32_buffer.try_into().unwrap(); // safe: `f32_buffer` is always 4 bytes
+        Ok((f32::from_be_bytes(array), 4))
+    }
+}
+
 /// Errors that can occur while writing writing to a buffer.
 #[derive(Debug, Error)]
 pub enum WriteError {
@@ -269,6 +353,39 @@ impl Writeable for Vec<u8> {
     fn write(&self) -> Result<Bytes, WriteError> {
         let mut buffer = BytesMut::new();
         buffer.extend_from_slice(self);
+        Ok(buffer.freeze())
+    }
+}
+
+impl Writeable for i32 {
+    fn write(&self) -> Result<Bytes, WriteError> {
+        let mut buffer = BytesMut::with_capacity(4);
+        buffer.extend_from_slice(&self.to_be_bytes());
+        Ok(buffer.freeze())
+    }
+}
+
+impl<T: Writeable> Writeable for Option<T> {
+    fn write(&self) -> Result<Bytes, WriteError> {
+        if self.is_none() {
+            return Ok(Bytes::new());
+        }
+        self.write()
+    }
+}
+
+impl Writeable for f64 {
+    fn write(&self) -> Result<Bytes, WriteError> {
+        let mut buffer = BytesMut::with_capacity(8);
+        buffer.extend_from_slice(&self.to_be_bytes());
+        Ok(buffer.freeze())
+    }
+}
+
+impl Writeable for f32 {
+    fn write(&self) -> Result<Bytes, WriteError> {
+        let mut buffer = BytesMut::with_capacity(4);
+        buffer.extend_from_slice(&self.to_be_bytes());
         Ok(buffer.freeze())
     }
 }

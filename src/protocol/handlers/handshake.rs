@@ -28,5 +28,6 @@ pub fn handle_handshake(connection: &mut Connection, packet: &ServerboundHandsha
         }
         _ => {} // TODO: handle other cases
     };
-    println!("Client is connecting with {:?}", packet.protocol_version);
+    println!("Connection state now is: {:?}", connection.state);
+    println!("Client is connecting with {}", packet.protocol_version);
 }
