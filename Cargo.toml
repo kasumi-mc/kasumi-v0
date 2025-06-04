@@ -1,0 +1,13 @@
+[package]
+name = "kasumi"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.45.1", features = ["rt-multi-thread", "net", "macros"] }
+
+# self crates dependencies
+kasumi-network = { path = "./kasumi-network" }
+
+[workspace]
+members = ["kasumi-network", "kasumi-protocol"]
